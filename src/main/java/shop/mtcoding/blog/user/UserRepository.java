@@ -38,14 +38,21 @@ public class UserRepository {
         em.persist(user);
     }
 
-    public User findByUsernameAndPassword(UserRequest.LoginDTO requestDTO) {
-        Query query = em.createNativeQuery("select * from user_tb where username=? and password=?", User.class);
-        query.setParameter(1, requestDTO.getUsername());
-        query.setParameter(2, requestDTO.getPassword());
+    public User findByUsernameAndPassword(String username) {
+        Query query = em.createNativeQuery("select * from user_tb where username=?", User.class);
+        query.setParameter(1, username);
 
+        try {
+            User user = (User) query.getSingleResult();
+            return true;
+        }catch (Exception e){
+            return false;
+        }
         //single = 한건 리턴될때
         //resultList = 여러건 리턴될 때
-        User user = (User) query.getSingleResult();
-        return user;
+
+    }
+
+    public User findByUsernameAndPassword(String username) {
     }
 }
