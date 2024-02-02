@@ -3,9 +3,10 @@ server:
     encoding:
       charset: utf-8
       force: true
+    session:
+      timeout: 1m
   port: 8080
 
-# db 연결
 spring:
   mustache:
     servlet:
@@ -23,7 +24,6 @@ spring:
     init:
       data-locations:
         - classpath:db/data.sql
-
   jpa:
     hibernate:
       ddl-auto: create
