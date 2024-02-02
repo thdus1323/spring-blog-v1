@@ -7,79 +7,69 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
 
-//1. 요청 받기 (URL, URI)
-//2. http body는 DTO로 받음
-//3. 기본 마임 전략 : x-www-form-urlencoded (username=ssar&password=1234)
-//4. 유효성 검사하기 (body 데이터가 있다면)
-//5. 클라이언트가 view만 원하는지? 혹은 DB처리 후 VIEW(머스태치)도 원하는지?
-//6. view만 원하면 view를 응답하면 끝
-//1. DB처리를 원하면 Model(DAO)에게 위임한 후, view를 응답하면 끝
-
+/**
+ * 컨트롤러
+ * 1. 요청받기(URI)
+ * 2. http body는 어떻게? (DTO)
+ * 3. 기본 mime 전략 : x-www.form.urlencoded (username=ssar&password=1234)
+ * 4. 유효성 검사하기 (body 데이터가 있다면)
+ * 5. 클라이언트가 View만 원하는지? 혹은 DB 처리 후 View도 원하는지?
+ * 6. DB처리를 원하면 Model(DAO)에게 위임 후 view를 응답하면 끝
+ */
 @RequiredArgsConstructor
 @Controller
 public class UserController {
-
-    private final UserRepository userRepository;
+    private final UserRepository userRepository; //의존성을 주입해야하는 거는 다 final 붙여야함
     private final HttpSession session;
 
+    //    public UserController(UserRepository userRepository, HttpSession session) { //IoC에 뜬걸 가져와서 쓴다 = 싱글톤으로 띄워서 쓰던거랑 같다
+//        this.userRepository = userRepository;
+//        this.session = session;
+//    }
     @PostMapping("/login")
-    public String login(UserRequest.LoginDTO requestDTO) {
-        // 1. 유효성 검사
-        if (requestDTO.getUsername().length() < 3) {
-            return "error/400";
-        }
-        // 2.동일 username 체크(나중에 하나의 트랜잭션으로 묶는 것이 좋다.)
-        User user = userRepository.findByUsernameAndPassword(requestDTO.getUsername());
-        if (user == null){
-            // 3. Model 필요 (위임. db연결)
-        }else {
+    public String login(UserRequest.LoginDTO requestDTO){ //쿼리스트링으로 담아야하지만 예외로 로그인은 post요청함 원래는 get요청
+        //1. 유효성 검사 //컨트롤러에서는 데이터베이스의 값과 비교해서 값을 체크하는게 아님,
+        if(requestDTO.getUsername().length() <3){
             return "error/400";
         }
 
-        return "redirect:/loginForm";
-
-
-
-        userRepository.save(requestDTO);
-        return "redirect:/loginForm";
-
-//        try {
-//            userRepository.save(requestDTO);
-//        }catch (Exception e){
-//
-//        }
-
-        // select * from user_tb where username=? and password=?
-
-        User user = userRepository.findByUsernameAndPassword(requestDTO);
-
-        if (user == null) { //로그인 실패
+        //2. (모델필요 select)
+        User user=userRepository.findByUsernameAndPassword(requestDTO);
+        if(user == null){
             return "error/401";
-        }else {
+        }else{
             session.setAttribute("sessionUser", user);
-            return "redirect:/";    // 3. 응답 //파일명 적지마라. 파일이 만들어져있으면 무조건 redirection
+            return "redirect:/";
         }
 
-        // 유저가 null이면 error 페이지로
-        // 유저가 null이 아니면, session 만들고, index 페이지로 이동
 //        System.out.println(user);
+//        //3. 응답
+//        return "redirect:/"; //파일명 쓰지말기 또 페이지만들어있는데
     }
 
-    @PostMapping("/join")
-    public String join(UserRequest.JoinDTO requestDTO) {
-        System.out.println(requestDTO);
+    @PostMapping ("/join")
+    public String join(UserRequest.JoinDTO requestDTO){
+        System.out.println(requestDTO); //@DATA안에 String도 포함되어있음
 
-        // 1. 유효성 검사
-        if (requestDTO.getUsername().length() < 3) {
+        //1. 유효성 검사
+        if(requestDTO.getUsername().length() <3){
             return "error/400";
         }
 
-        // 2. Model에게 위임 하기
-        //DB insert 후. MVC 패턴
-        userRepository.save(requestDTO);
-        //    userRepository.saveV2(requestDTO);
+        //2. 동일 username 체크
+        User user=userRepository.findByUsername(requestDTO);
+        if (user == null){
+            userRepository.save(requestDTO);
+        }else {
+            return "error/401";
+        }
 
-        return "redirect:/loginForm";
+
+        //2. Model에게 위임하기
+
+        userRepository.save(requestDTO);
+
+        return "redirect:/loginForm"; //리다이렉션불러놓은게 있어서 다시부른거
     }
 
     @GetMapping("/joinForm")
@@ -99,8 +89,9 @@ public class UserController {
 
     @GetMapping("/logout")
     public String logout() {
-
-        session.invalidate();
+        session.invalidate(); //1번 서랍안에 있는 내용을 다 삭제
         return "redirect:/";
     }
+
+
 }
