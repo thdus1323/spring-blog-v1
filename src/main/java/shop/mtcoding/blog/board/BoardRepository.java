@@ -1,34 +1,41 @@
 package shop.mtcoding.blog.board;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.qlrm.mapper.JpaResultMapper;
 import org.springframework.stereotype.Repository;
 import shop.mtcoding.blog._core.Constant;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
 import java.util.List;
+
 @RequiredArgsConstructor
 @Repository
 public class BoardRepository {
     private final EntityManager em;
-    private final JdbcTemplate jdbcTemplate;
 
     public int count(){
-
-        return 1;
+        Query query = em.createNativeQuery("select count(*) from board_tb");
+        Long count = (Long) query.getSingleResult();
+        return count.intValue();
     }
 
     public List<Board> findAll(int page){
-        final int COUNT = 3;
-        int value = page*COUNT;
-        int value2 = page* Constant.PAGING_COUNT; // 체크
+        int value = page* Constant.PAGING_COUNT;
         Query query = em.createNativeQuery("select * from board_tb order by id desc limit ?,?", Board.class);
         query.setParameter(1, value);
-        query.setParameter(2, COUNT);
         query.setParameter(2, Constant.PAGING_COUNT);
 
         List<Board> boardList = query.getResultList();
         return boardList;
+    }
+
+    public BoardResponse.DetailDTO findById(int id) {
+        Query query = em.createNativeQuery("select bt.id, bt.title, bt.content, bt.created_at, ut.id user_id, ut.username from board_tb bt inner join user_tb ut on bt.user_id = ut.id where bt.id = ?");
+        query.setParameter(1, id);
+
+        JpaResultMapper rm = new JpaResultMapper();
+        BoardResponse.DetailDTO responseDTO = rm.uniqueResult(query, BoardResponse.DetailDTO.class);
+        return responseDTO;
     }
 }
